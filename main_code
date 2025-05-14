@@ -1,0 +1,96 @@
+#include <3ds.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+
+#define VERSION_PATH "romfs:/version.txt"
+#define NNID_PATH "sdmc:/rw/sys/save_data/8000000b"
+#define BACKUP_DIR "sdmc:/NNID-BACKUP/"
+
+void createBackup() {
+    mkdir(BACKUP_DIR, 0777);
+    char backupPath[256];
+    snprintf(backupPath, sizeof(backupPath), "%s8000000b.bak", BACKUP_DIR);
+    remove(backupPath); // falls schon vorhanden
+    rename(NNID_PATH, backupPath);
+}
+
+void deleteNNID() {
+    remove(NNID_PATH);
+}
+
+void drawMenu(int option) {
+    consoleClear();
+    printf("\x1b[1;1HNNID Remover v2.2 – TR Technic");
+    printf("\x1b[3;1H[1] Backup + Entfernen");
+    printf("\x1b[4;1H[2] Nur Backup");
+    printf("\x1b[5;1H[3] Nur Entfernen");
+    printf("\x1b[6;1H[4] Version anzeigen");
+    printf("\x1b[7;1H[Start] Beenden");
+
+    printf("\x1b[9;1HDeine Auswahl: %d", option);
+}
+
+char* getVersion() {
+    static char version[32] = "Unbekannt";
+    FILE* f = fopen(VERSION_PATH, "r");
+    if (f) {
+        fgets(version, sizeof(version), f);
+        fclose(f);
+    }
+    return version;
+}
+
+int main(int argc, char* argv[]) {
+    gfxInitDefault();
+    consoleInit(GFX_TOP, NULL);
+
+    romfsInit();
+
+    int option = 1;
+    drawMenu(option);
+
+    while (aptMainLoop()) {
+        hidScanInput();
+        u32 kDown = hidKeysDown();
+
+        if (kDown & KEY_DOWN) option++;
+        if (kDown & KEY_UP) option--;
+        if (option < 1) option = 4;
+        if (option > 4) option = 1;
+
+        drawMenu(option);
+
+        if (kDown & KEY_A) {
+            consoleClear();
+            switch (option) {
+                case 1:
+                    printf("Backup + Löschen...\n");
+                    createBackup();
+                    deleteNNID();
+                    break;
+                case 2:
+                    printf("Backup wird erstellt...\n");
+                    createBackup();
+                    break;
+                case 3:
+                    printf("NNID wird gelöscht...\n");
+                    deleteNNID();
+                    break;
+                case 4:
+                    printf("Aktuelle Version: %s\n", getVersion());
+                    break;
+            }
+            printf("\n[A] zurück");
+            while (!(hidKeysDown() & KEY_A)) hidScanInput();
+        }
+
+        if (kDown & KEY_START) break;
+        gspWaitForVBlank();
+    }
+
+    romfsExit();
+    gfxExit();
+    return 0;
+}
