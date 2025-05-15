@@ -2,7 +2,7 @@ nnid_remover/
 ├── source/
 │   └── main.c
 ├── gfx/
-│   └── icon.png         ← Dein TR Technic Logo
+│   └── icon.png         ← TR Technic Logo
 ├── romfs/
 │   ├── version.txt      ← Initial: „v2.2“
 ├── Makefile
